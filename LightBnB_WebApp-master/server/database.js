@@ -104,9 +104,32 @@ exports.addUser = addUser;
  * @param {string} guest_id The id of the user.
  * @return {Promise<[{}]>} A promise to the reservations.
  */
+// return getAllProperties(null, 2);
+
 const getAllReservations = function(guest_id, limit = 10) {
-  return getAllProperties(null, 2);
-}
+  const values = [guest_id, limit];
+  const sql = `
+  SELECT * FROM reservations 
+  JOIN properties ON reservations.property_id = properties.id
+  JOIN property_reviews ON properties.id = property_reviews.property_id
+  WHERE reservations.guest_id = $1
+  AND reservations.end_date < now()::date 
+  GROUP BY property_reviews.id, properties.id, reservations.id
+  ORDER BY reservations.start_date 
+  LIMIT $2;
+  `;
+
+  const promise = pool.query(sql, values)
+    .then((result) => {
+      return result.rows[0];
+    })
+    .catch((err) => {
+      console.log(err.message)
+    });
+
+  return promise; 
+};
+
 exports.getAllReservations = getAllReservations;
 
 /// Properties
